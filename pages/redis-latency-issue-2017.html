@@ -1,0 +1,75 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="../index.html">The Untitled Blog</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="archive/index.html">Archive</a></li>
+          <li><a href="about-me.html">Me</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container-narrow">
+      <div class="content">
+        <div class="page-header">
+          <h1>Life is a race... Run.... Run.... </h1>
+        </div>
+        <div class="row-fluid">
+          <div class="span12">
+            <div class="date">
+              16 Nov 2017
+            </div>
+            <div class="content">
+              <p>
+                One fine morning, we figured out that our redis latencies are too high. As per our Service Level Aggrements(SLA), our endpoint should respond back in 10ms.
+                But from metrics we figured that, only some of our get redis calls are taking more than 100ms. This post is just the story about how we went on to debug the issue.
+              </p>
+              <p>
+                <b>Step1 - Analysing the bytes of data being transferred</b>
+                <br>
+                  The first doubt we had was - 'By (code) mistake, the amount of data being transferred may be soo high and so redis is taking more time to respond back'.
+                  Devops team helped us in finding that, our data transfer metrics were looking good and so this possiblity was eliminated.
+              </p>
+              <p>
+                <b>Step2 - Issue with the server setup (less probability)</b>
+                <br>
+                  The second concern we had was - 'What if we have some issue with the server setup.(highly less probable factor. But still we went ahead)'. We removed
+                  all db calls and redis calls and took the build out. Removed the first server instance out of elb and deployed the build and tested. We got the response back in less than a ms.
+                  So this possiblity was eliminated
+              </p>
+              <p>
+                <b>Step3 - Removed the redis calls and made db calls</b>
+                <br>
+                  The third step was a test which we did, 'We removed the redis calls and made db calls'. With direct db calls, we were receiving the response back in 60 ms.
+                  The whole purpose of redis is defeated here (In our case, db faster than redis).
+              </p>
+              <p>
+                <b>Step4 - The observation we made</b>
+                <br>
+                  While viewing the metrics (with redis) we were able to notice that some of our calls take less 5ms and some of them take more than 100 ms.
+                  On close observation we figured that, if calls are so frequent, we get the response in less than 5ms and if they are after a long gap, they take more than 100 ms.
+              </p>
+              <p>
+                <b>Step5 - Finally</b>
+                <br>
+                  Finally, our devops team noticed that the connection pool size is always not consistent. The connection pool is getting timed out after 15s (if not used).
+                  So if the request comes after 15s, there won't be any existing connections, so a new connection will be made redis and so the connection making process takes more time.
+                  The redis library we used didn't had an option to set the TTL. We quickly moved to a new library and set the connection to ever living value. Thus we were able to meet our SLA.
+              </p>
+              Hope to see you soon!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
