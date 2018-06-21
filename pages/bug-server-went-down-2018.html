@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="../index.html">The Untitled Blog</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="archive/index.html">Archive</a></li>
+          <li><a href="about-me.html">Me</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container-narrow">
+      <div class="content">
+        <div class="page-header">
+          <h1>Life is a race... Run.... Run.... </h1>
+        </div>
+        <div class="row-fluid">
+          <div class="span12">
+            <div class="date">
+              03 Jun 2018
+            </div>
+            <div class="content">
+              <p>
+                That was a release day. Yes a new set of feature which we have developed is about to go live.
+                The expected hit to our backend was 100 reads per second and 3 writes per second atleast for the next few days.
+                We turned on the feature flag. This post is about the issues we faced after we turned on the flag :P
+              </p>
+              <p>
+                <b>Observation 1 - Number of request kept on increasing</b>
+                <br>
+                  Once we turned on the flag, within few minutes, we noticed that the number of request kept on increasing and it is more than 100/s.
+                  After few minutes from aws console, we noticed server has started to give 503 to a lot of request.
+                  Suddenly to everyones surprise we received alert which said `Instances are unhealthy....`. Then we came to know, all services related to the new feature is down because of sudden ultra-spike in traffice.
+                  Yes it a <b>BOOM</b>. Lets find out what happened.
+              </p>
+              <p>
+                <b>Observation 2 - All server are down</b>
+                <br>
+                  Now we realised since all of our servers are down, the possiblities are two, someone spamming our APIs. As we always do, we started our discussion.
+                  Our guess was right - front end is hitting our backend a lot of times. Literally everytime our app is opened. But that shouldn't be the case, Our service
+                  should be called when user has registered for. Instead of checking that, front end kept on calling our get on every app open, which is ~ equal to 1000/s (on average).
+              </p>
+              <p>
+                <b>Temporary fix</b>
+                <br>
+                  Till the app sends an update, we increased our minimum instances in our infra and yes that shortcut gave us a breathing time.
+              </p>
+              Hope to see you soon!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
