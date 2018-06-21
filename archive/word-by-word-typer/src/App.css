@@ -1,0 +1,65 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px;
+}
+
+.App-header {
+  background-color: #222;
+  height: 150px;
+  padding: 20px;
+  color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
+
+.row-typist {
+	height: 100%;
+    background-color: white;
+    padding: 25px;
+    width: 70%;
+    text-align: center;
+    margin: 25px auto;
+	line-height: 20px;
+}
+
+.technologytyper {
+	font-size: 2em;
+	font-family: cursive;
+	color: black;
+}
+
+.blink {
+	animation: blinker 3s linear 3;
+}
+
+.technologystack {
+	font-size: 22px;
+	font-family: cursive;
+	line-height:  17px;
+}
+
+@keyframes blinker {
+  50% { opacity: 0; }
+}
+
+.technologystack a {
+	font-size: 20px;
+	line-height: 20px;
+	color: hotpink;
+}
+
+.textshowcase {
+	color: red;
+}
+
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
