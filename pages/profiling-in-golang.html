@@ -1,0 +1,57 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="../index.html">The Untitled Blog</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="archive/index.html">Archive</a></li>
+          <li><a href="about-me.html">Me</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container-narrow">
+      <div class="content">
+        <div class="page-header">
+          <h1>Life is a race... Run.... Run.... </h1>
+        </div>
+        <div class="row-fluid">
+          <div class="span12">
+            <div class="date">
+              03 Jun 2018
+            </div>
+            <div class="content">
+              <h1> This document is under development</h1>
+              Wiki Definition - dynamic program analysis that measures, for example the space (memory) or time complexity of a program, the usage of particular instructions or the frequency and duration of function calls. Profiling information serves to aid program optimisation. <br />
+
+              <h4>Profiling in Golang </h4>
+
+              Go provides high level profiling package /net/http/pprof. pprof has low overhead and can be used in prod env on live traffic without any noticeable performance penalties. <br />
+
+              Get the pprof package from go get -u github.com/google/pprof <br />
+
+              Register the below http endpoints under the router <br />
+
+              router.HandleFunc("/debug/pprof/", pprof.Index) <br />
+              router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline) <br />
+              router.HandleFunc("/debug/pprof/profile", pprof.Profile) <br />
+              router.HandleFunc("/debug/pprof/symbol", pprof.Symbol) <br />
+              router.HandleFunc("/debug/pprof/trace", pprof.Trace) <br />
+              router.HandleFunc("/debug/pprof/{action}", pprof.Index) <br />
+              1) Launch your application and run go tool pprof {baseurl}/debug/pprof/profile?seconds=5. profile is for information about cpu profiling. It will give out info of how many seconds each function took and how many seconds each line of function took. <br />
+              Hope to see you soon!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
