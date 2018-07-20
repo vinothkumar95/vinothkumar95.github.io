@@ -1,0 +1,350 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="../index.html">The Untitled Blog</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="archive/index.html">Archive</a></li>
+          <li><a href="about-me.html">Me</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container-narrow">
+      <div class="content">
+        <div class="page-header">
+          <h1>Life is a race... Run.... Run.... </h1>
+        </div>
+        <div class="row-fluid">
+          <div class="span12">
+            <div class="date">
+              12 Jul 2018
+            </div>
+            <div class="content">
+              <h3>My experiments with channels and context</h3>
+              <p>
+                One beautiful evening I thought of learning graceful shutdown and ended up diving deep into channels and context.
+                Inspiration: http://guzalexander.com/2017/05/31/gracefully-exit-server-in-go.html
+                First Created a struct
+                <pre>
+                  type Task struct {
+                    ticker *time.Ticker
+                  }
+                </pre>
+                The above declared struct Task has ticker.
+                Receiever function Run was added to the task
+                <pre>
+                  func (t *Task) Run() {
+                      for {
+                          select {
+                              case <-t.ticker.C:
+                                  fmt.Println("Tick received")
+                          }
+                      }
+                  }
+                </pre>
+                We will do an infinite looping with select with a case to print text "Text received", when Channel C in ticker got populated.
+                Main function looked like this
+                <pre>
+                  func main() {
+                      task := Task {
+                          ticker: time.NewTicker(1 * time.Second),
+                      }
+                      task.Run()
+                  }
+                </pre>
+                lets run the program, and do cmd+C, the result is
+              </p>
+              <img src="../images/interupt_hpnd.png" />
+              <p>
+                This is expected and the program terminated.
+                Now add these two lines to our main function
+                <pre>
+                  c := make(chan os.Signal)
+                  signal.Notify(c, os.Interrupt)
+                </pre>
+                Main will look something like this
+                <pre>
+                  func main() {
+                    c := make(chan os.Signal)
+                    signal.Notify(c, os.Interrupt)
+
+                    task := Task {
+                      ticker: time.NewTicker(1 * time.Second),
+                    }
+                    task.Run()
+                  }
+                </pre>
+                Expect the unexpected. Yes, How many times you do cmd + C, the program won't terminate. This is because we have caught the os.Interrupt in channel c, but didn't did any action.
+                Now lets add these below lines to main function
+                <pre>
+                  go func() {
+                      for {
+                          select {
+                          case sig := <-c:
+                              fmt.Println("Caught intterupt %v", sig)
+                              os.Exit(1)
+                          }
+                      }
+                  }()
+                </pre>
+                These lines would do an infinite for in a go routine, whiche would select if interupt signal is received. If yes, it would print and exit.
+                Now the main looks something like this
+                <pre>
+                  func main() {
+                      c := make(chan os.Signal)
+                      signal.Notify(c, os.Interrupt)
+
+                      go func() {
+                          for {
+                              select {
+                              case sig := <-c:
+                                  fmt.Println("Caught intterupt %v", sig)
+                                  os.Exit(1)
+                              }
+                          }
+                      }()
+
+                      task := Task {
+                          ticker: time.NewTicker(1 * time.Second),
+                      }
+                      task.Run()
+                  }
+                </pre>
+                The result will look like the below,
+                <img src="../images/interupt_os_exit.png" />
+                You would be able to notice that, the program was stopped abruptly and the logic which was already running was also stopped. Ideally the program should process the request which it has already received (So for example, if the program was not stopped abruptly, handle() function should have printed all the 5# in the row. It shouldn't take any new request).
+                Lets find a way to notify Task, not to take any incoming request, but finish the already running request. Thus we will implement graceful shutdown.
+                Just to add complexity, lets add some more logic to Run() receiver function.
+
+                <pre>
+                  func (t *Task) Run() {
+                      for {
+                          select {
+                          case <-t.ticker.C:
+                              fmt.Println("Handle called")
+                              handle()
+                          }
+                      }
+                  }
+                </pre>
+                Handle function will look like this
+                <pre>
+                  func handle() {
+                      for i := 0; i < 5; i++ {
+                          fmt.Print("#")
+                          time.Sleep(time.Millisecond * 5000)
+                      }
+                      fmt.Println("")
+                  }
+                </pre>
+                The final program looks like
+                <pre>
+                  package main
+
+                  import (
+                      "os"
+                      "os/signal"
+                      "fmt"
+                      "time"
+                  )
+
+                  type Task struct {
+                      ticker *time.Ticker
+                      notifyClose chan struct{}
+                  }
+
+                  func (t *Task) Run() {
+                      for {
+                          select {
+                          case <- t.notifyClose:
+                              fmt.Println("Notify close")
+                              return
+                          case <-t.ticker.C:
+                              fmt.Println("Handle called")
+                              handle()
+                          }
+                      }
+                  }
+
+                  func (t *Task) Stop() {
+                      close(t.notifyClose)
+                  }
+
+                  func handle() {
+                      for i := 0; i < 5; i++ {
+                          fmt.Print("#")
+                          time.Sleep(time.Millisecond * 5000)
+                      }
+                      fmt.Println("")
+                  }
+
+                  func main() {
+                      c := make(chan os.Signal)
+                      signal.Notify(c, os.Interrupt)
+
+                      task := Task {
+                          ticker: time.NewTicker(3 * time.Second),
+                          notifyClose: make(chan struct{}),
+                      }
+
+                      go func() {
+                          for {
+                              select {
+                              case sig := <-c:
+                                  fmt.Println("Caught intterupt %v", sig)
+                                  task.Stop()
+                              }
+                          }
+                      }()
+
+
+                      task.Run()
+                  }
+                </pre>
+                Explanation: We introduce channel with Task to stop the incoming request when the interrupt signal is caught. Receiver function Stop will close the noticyClose channel. Closed channel will by default return default value of that data type, so case ← t.notifyClose will get executed and so the function will get exited. In this way, the existing request will run and the program will exit once they are done.
+
+                PS: will try to add more writings to this.
+
+                Note : This is just one way of doing graceful shutdown and it depends on the program and the logic.
+              </p>
+              <h3>Accidently played with channels and saw a magic happening</h3>
+              <pre>
+                package main
+
+                import (
+                    "fmt"
+                    "time"
+                    "sync"
+                )
+
+
+                func main() {
+                    func() { cerated := RandomFn(); time.Sleep(10 * time.Second); close(cerated) }()
+                    time.Sleep(2 * time.Second)
+                }
+
+                func RandomFn() chan struct{} {
+                    shutdown := make(chan struct{})
+                    go func() {
+                        ticker := time.NewTicker(5 * time.Second)
+                        defer ticker.Stop()
+
+                        for {
+                            select {
+                            case <-ticker.C:
+                                fmt.Println("Sleep started")
+                            case <-shutdown:
+                                fmt.Println("stopped")
+                                return
+                            }
+                        }
+                    }()
+                    return shutdown
+                }
+              </pre>
+              <p>
+                If you run the above program, the program will stop with "stopped" printed at the end. The RandomFn() returns shutdown channel and it is taken as cerated. When we close the cerated, it impacts shutdown. Interesting...
+              </p>
+              <h3>Conext in Golang</h3>
+              Creating the context with timeout. So all the child with that context will timeout after 2 seconds.
+              <pre>
+                package main
+
+                import (
+                    "fmt"
+                    "time"
+                    "sync"
+                    "context"
+                )
+
+
+                func main() {
+                    ctx := context.Background()
+                    ctx, _ = context.WithTimeout(ctx, 2 * time.Second)
+                    RandomFn(ctx)
+                }
+
+                func RandomFn(ctx context.Context) chan struct{} {
+                    shutdown := make(chan struct{})
+                    func() {
+                        ticker := time.NewTicker(5 * time.Second)
+                        defer ticker.Stop()
+
+                        for {
+                            select {
+                            case <-ticker.C:
+                                fmt.Println("Sleep started")
+                            case <-ctx.Done():
+                                if ctx.Err() == context.Canceled {
+                                    fmt.Println("Canceled")
+                                    return
+                                } else if ctx.Err() == context.DeadlineExceeded {
+                                    fmt.Println("Deadline exceeded")
+                                    return
+                                }
+                            }
+                        }
+                    }()
+                    return shutdown
+                }
+              </pre>
+              On cancelling the context, "Deadline Exceeded" error is expected.
+              <pre>
+                package main
+
+                import (
+                    "fmt"
+                    "time"
+                    "sync"
+                    "context"
+                )
+
+                func main() {
+                    ctx := context.Background()
+                    ctx, cancel := context.WithCancel(ctx)
+                    RandomFn(ctx)
+                    cancel()
+                    time.Sleep(1 * time.Minute)
+                }
+
+                func RandomFn(ctx context.Context) chan struct{} {
+                    shutdown := make(chan struct{})
+                    go func() {
+                        ticker := time.NewTicker(5 * time.Second)
+                        defer ticker.Stop()
+
+                        for {
+                            select {
+                            case <-ticker.C:
+                                fmt.Println("Sleep started")
+                            case <-ctx.Done():
+                                if ctx.Err() == context.Canceled {
+                                    fmt.Println("Canceled")
+                                    return
+                                } else if ctx.Err() == context.DeadlineExceeded {
+                                    fmt.Println("Deadline exceeded")
+                                    return
+                                }
+                            }
+                        }
+                    }()
+                    return shutdown
+                }
+              </pre>
+              Hope to see you soon!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
