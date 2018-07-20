@@ -30,24 +30,59 @@
             </div>
             <div class="content">
               <h1> This document is under development</h1>
-              Wiki Definition - dynamic program analysis that measures, for example the space (memory) or time complexity of a program, the usage of particular instructions or the frequency and duration of function calls. Profiling information serves to aid program optimisation. <br />
+              <p>
+                Wiki Definition - dynamic program analysis that measures, for example the space (memory) or time complexity of a program, the usage of particular instructions or the frequency and duration of function calls. Profiling information serves to aid program optimisation. <br />
 
-              <h4>Profiling in Golang </h4>
+                <h4>Profiling in Golang </h4>
 
-              Go provides high level profiling package /net/http/pprof. pprof has low overhead and can be used in prod env on live traffic without any noticeable performance penalties. <br />
+                Go provides high level profiling package /net/http/pprof. pprof has low overhead and can be used in prod env on live traffic without any noticeable performance penalties. <br />
+                Get the pprof package from <pre>go get -u github.com/google/pprof</pre><br />
+                Register the below http endpoints under the router <br />
 
-              Get the pprof package from go get -u github.com/google/pprof <br />
+                <pre>
+                  router.HandleFunc("/debug/pprof/", pprof.Index) <br />
+                  router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline) <br />
+                  router.HandleFunc("/debug/pprof/profile", pprof.Profile) <br />
+                  router.HandleFunc("/debug/pprof/symbol", pprof.Symbol) <br />
+                  router.HandleFunc("/debug/pprof/trace", pprof.Trace) <br />
+                  router.HandleFunc("/debug/pprof/{action}", pprof.Index) <br />
+                </pre>
+                1) Launch your application and run <b>go tool pprof {baseurl}/debug/pprof/profile?seconds=5</b>. profile is for information about cpu profiling. It will give out info of how many seconds each function took and how many seconds each line of function took. <br />
+                Screenshot - TBU <br /> <br />
+                2) Now try running the <b>top</b> command. By default top will list 10 function calls in random order with <b>cpu usage</b>. <b>top20</b> will list 20 function calls in random order. <b>top20 -cum</b> will list 20 function calls in sorted order by cumulative seconds (cum).
+                Screenshot - TBU <br /> <br />
+                3) Run <b>go tool pprof {baseurl}/debug/pprof/heap?seconds=5</b>. heap is for information about memory profiling. Top will work the same way as above. Cumulative sum will be total memory usage in KB of each fn and each line of fn.
+                Hope to see you soon!
+                Screenshot - TBU <br /> <br />
+              </p>
 
-              Register the below http endpoints under the router <br />
-
-              router.HandleFunc("/debug/pprof/", pprof.Index) <br />
-              router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline) <br />
-              router.HandleFunc("/debug/pprof/profile", pprof.Profile) <br />
-              router.HandleFunc("/debug/pprof/symbol", pprof.Symbol) <br />
-              router.HandleFunc("/debug/pprof/trace", pprof.Trace) <br />
-              router.HandleFunc("/debug/pprof/{action}", pprof.Index) <br />
-              1) Launch your application and run go tool pprof {baseurl}/debug/pprof/profile?seconds=5. profile is for information about cpu profiling. It will give out info of how many seconds each function took and how many seconds each line of function took. <br />
-              Hope to see you soon!
+                <h3>What is Flat, Cum?</h3>
+              <p>
+                Lets take the below function as an example. Each line of the function will hold how many milli seconds it took.
+                <pre>
+                  Time taken          Function
+                                      func A() {
+                  10 ms                   B()
+                  10 ms                   print("some random value")
+                  10 ms                   C()
+                                      }
+                </pre>
+                Flat - usage by the function “excluding the usage by func calls”. <br />
+                In the above example Flat is 10ms. <br />
+                Cum - cumulative sum “including the func calls”. <br />
+                In the above example Cum is 30ms. <br />
+                <h3>Web command</h3>
+                In pprof interactive terminal, running the web command will give the svg as output. <br />
+                Screenshot - TBU
+                <h3>List command</h3>
+                With top command we were able to see the cpu usage of each function. List command will list the cpu usage of each line of the function.
+                <br />
+                We need to specify the source path of our codebase, so the command will look like <b>pprof -source_path=/Users/vinothkumars/go/src/ profile.pb.gz</b> <br />
+                Screenshot - TBU
+                <br /> <br />
+                As you see above, list will list the cpu usage of each line of the function. If there is an ambiguity in the function, all functions which are with same function will be listed. <br />
+                Similar way we can check threadCount, mutex, block, threadCount with pprof.
+              </p>
             </div>
           </div>
         </div>
